@@ -8,44 +8,53 @@ st.set_page_config(page_title="Roadmap Planner", page_icon="📅")
 
 # Title and description
 st.title("Roadmap Planning and Visualization")
-st.write("This tool helps you organize and visualize your product roadmap by allowing you to input phases and milestones. The roadmap is displayed as a Gantt chart.")
-
-# Sidebar for user inputs
-st.sidebar.header("Input Roadmap Details")
-
-# Get input for phases and milestones
-phases = st.sidebar.text_area("Enter phases (one per line)", "Phase 1\nPhase 2\nPhase 3")
-milestones = st.sidebar.text_area("Enter milestones (one per line)", "Milestone A\nMilestone B\nMilestone C")
-start_date = st.sidebar.date_input("Start Date", datetime.today())
-end_date = st.sidebar.date_input("End Date", datetime.today())
+st.write("This tool helps you organize and visualize your product roadmap by allowing you to input phases and milestones with custom start and end dates. The roadmap is displayed as a Gantt chart.")
 
 # Initialize empty DataFrame for roadmap data
-roadmap_data = pd.DataFrame(columns=["Phase", "Milestone", "Start", "End"])
+if 'roadmap_data' not in st.session_state:
+    st.session_state['roadmap_data'] = pd.DataFrame(columns=["Phase", "Milestone", "Start", "End"])
 
-# Add button to add a phase/milestone
-if st.sidebar.button("Add to Roadmap"):
-    phases_list = phases.split("\n")
-    milestones_list = milestones.split("\n")
-    start = pd.to_datetime(start_date)
-    end = pd.to_datetime(end_date)
+# Sidebar for user inputs
+st.sidebar.header("Add a New Phase or Milestone")
 
-    # Prepare data to add as new rows
-    new_data = pd.DataFrame({
-        "Phase": phases_list,
-        "Milestone": milestones_list,
-        "Start": [start] * len(phases_list),
-        "End": [end] * len(phases_list)
-    })
-    # Concatenate the new data with the existing roadmap_data
-    roadmap_data = pd.concat([roadmap_data, new_data], ignore_index=True)
+# Get input for each phase/milestone individually
+with st.sidebar.form("roadmap_form"):
+    phase = st.text_input("Phase", "Phase 1")
+    milestone = st.text_input("Milestone", "Milestone A")
+    start_date = st.date_input("Start Date", datetime.today())
+    end_date = st.date_input("End Date", datetime.today())
+    
+    # Button to add the new entry to the roadmap
+    add_button = st.form_submit_button("Add to Roadmap")
+    
+    # Check if the start date is before the end date
+    if add_button:
+        if start_date <= end_date:
+            # Append new entry to the roadmap DataFrame
+            new_entry = pd.DataFrame({
+                "Phase": [phase],
+                "Milestone": [milestone],
+                "Start": [pd.to_datetime(start_date)],
+                "End": [pd.to_datetime(end_date)]
+            })
+            st.session_state['roadmap_data'] = pd.concat([st.session_state['roadmap_data'], new_entry], ignore_index=True)
+        else:
+            st.sidebar.error("End date must be after the start date.")
 
 # Display roadmap data
-if not roadmap_data.empty:
+if not st.session_state['roadmap_data'].empty:
     st.subheader("Roadmap Data")
-    st.write(roadmap_data)
+    st.write(st.session_state['roadmap_data'])
 
     # Visualize roadmap with Plotly Gantt chart
-    fig = px.timeline(roadmap_data, x_start="Start", x_end="End", y="Phase", color="Milestone", title="Product Roadmap")
+    fig = px.timeline(
+        st.session_state['roadmap_data'], 
+        x_start="Start", 
+        x_end="End", 
+        y="Phase", 
+        color="Milestone", 
+        title="Product Roadmap"
+    )
     fig.update_yaxes(categoryorder="total ascending")
     fig.update_layout(xaxis_title="Timeline", yaxis_title="Phases", template="plotly_white")
     
