@@ -6,13 +6,8 @@ from datetime import datetime
 # Set up Streamlit page configuration
 st.set_page_config(page_title="Roadmap Planner", page_icon="📅")
 
-# LinkedIn profile
-Name = "Harrisun Raj Mohan"
-LinkedIn_URL = "https://www.linkedin.com/in/harrisun-raj-mohan/"
 # Title and description
 st.title("Roadmap Planning and Visualization")
-st.write(f"Developed by {Name}")
-st.write(f"[Connect on LinkedIn]({LinkedIn_URL})")
 st.write("This tool helps you organize and visualize your product roadmap by allowing you to input phases and milestones. The roadmap is displayed as a Gantt chart.")
 
 # Sidebar for user inputs
@@ -34,8 +29,15 @@ if st.sidebar.button("Add to Roadmap"):
     start = pd.to_datetime(start_date)
     end = pd.to_datetime(end_date)
 
-    for phase, milestone in zip(phases_list, milestones_list):
-        roadmap_data = roadmap_data.append({"Phase": phase, "Milestone": milestone, "Start": start, "End": end}, ignore_index=True)
+    # Prepare data to add as new rows
+    new_data = pd.DataFrame({
+        "Phase": phases_list,
+        "Milestone": milestones_list,
+        "Start": [start] * len(phases_list),
+        "End": [end] * len(phases_list)
+    })
+    # Concatenate the new data with the existing roadmap_data
+    roadmap_data = pd.concat([roadmap_data, new_data], ignore_index=True)
 
 # Display roadmap data
 if not roadmap_data.empty:
