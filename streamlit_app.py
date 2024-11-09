@@ -15,7 +15,7 @@ if 'roadmap_data' not in st.session_state:
     st.session_state['roadmap_data'] = pd.DataFrame(columns=["Phase", "Milestone", "Start", "End"])
 
 # Sidebar for user inputs
-st.sidebar.header("Add a New Phase or Milestone")
+st.sidebar.header("Manage Roadmap Entries")
 
 # Get input for each phase/milestone individually
 with st.sidebar.form("roadmap_form"):
@@ -41,6 +41,24 @@ with st.sidebar.form("roadmap_form"):
         else:
             st.sidebar.error("End date must be after the start date.")
 
+# Feature to delete an entry
+if not st.session_state['roadmap_data'].empty:
+    st.sidebar.subheader("Delete a Phase/Milestone")
+    # Create a list of unique Phase-Milestone combinations
+    entries = st.session_state['roadmap_data'][['Phase', 'Milestone']].apply(lambda x: f"{x['Phase']} - {x['Milestone']}", axis=1).tolist()
+    selected_entry = st.sidebar.selectbox("Select Phase-Milestone to delete", entries)
+    
+    if st.sidebar.button("Delete Selected Entry"):
+        # Split the selected entry to get phase and milestone
+        phase_to_delete, milestone_to_delete = selected_entry.split(" - ")
+        
+        # Delete the row from the DataFrame
+        st.session_state['roadmap_data'] = st.session_state['roadmap_data'][
+            ~((st.session_state['roadmap_data']['Phase'] == phase_to_delete) & 
+              (st.session_state['roadmap_data']['Milestone'] == milestone_to_delete))
+        ]
+        st.sidebar.success(f"Deleted: {selected_entry}")
+
 # Display roadmap data
 if not st.session_state['roadmap_data'].empty:
     st.subheader("Roadmap Data")
@@ -62,3 +80,4 @@ if not st.session_state['roadmap_data'].empty:
     st.plotly_chart(fig)
 else:
     st.write("Please add phases and milestones to visualize the roadmap.")
+
