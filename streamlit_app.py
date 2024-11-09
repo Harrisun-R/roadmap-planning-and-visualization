@@ -6,8 +6,14 @@ from datetime import datetime
 # Set up Streamlit page configuration
 st.set_page_config(page_title="Roadmap Planner", page_icon="📅")
 
+# Placeholder for your name and LinkedIn profile
+NAME = "Harrisun Raj Mohan"
+LINKEDIN_URL = "https://www.linkedin.com/in/harrisun-raj-mohan/"
+
 # Title and description
 st.title("Roadmap Planning and Visualization")
+st.write(f"Developed by {NAME}")
+st.write(f"[Connect on LinkedIn]({LINKEDIN_URL})")
 st.write("This tool helps you organize and visualize your product roadmap by allowing you to input phases and milestones with custom start and end dates. The roadmap is displayed as a Gantt chart.")
 
 # Initialize empty DataFrame for roadmap data
