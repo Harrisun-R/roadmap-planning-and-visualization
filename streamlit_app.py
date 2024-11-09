@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
+import random
 import uuid
 
 # Set up Streamlit page configuration
