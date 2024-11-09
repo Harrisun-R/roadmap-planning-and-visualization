@@ -21,17 +21,22 @@ st.write("Organize and visualize your product roadmap with custom phases, milest
 if 'roadmap_data' not in st.session_state:
     st.session_state['roadmap_data'] = pd.DataFrame(columns=["ID", "Phase", "Milestone", "Start", "End", "Color", "Notes", "Dependencies"])
 
-# Sidebar for user inputs
-st.sidebar.header("Add New Entry to Roadmap")
+# Function to generate a random color in hex format
+def generate_random_color():
+    return f"#{''.join([random.choice('0123456789ABCDEF') for _ in range(6)])}"
 
+# Sidebar for user inputs
+st.sidebar.header("Add or Edit Roadmap Entry")
+
+# Allow user to add a new roadmap item
 with st.sidebar.form("roadmap_form"):
     phase = st.text_input("Phase", "Phase 1")
     milestone = st.text_input("Milestone", "Milestone A")
     start_date = st.date_input("Start Date", datetime.today())
     end_date = st.date_input("End Date", datetime.today())
-    color = st.color_picker("Select Milestone Color", "#00aaff")
+    color = st.color_picker("Select Milestone Color", generate_random_color())
     notes = st.text_area("Notes (Optional)", "Additional information or links")
-    
+
     # Dependencies selection
     all_milestones = st.session_state['roadmap_data']['Milestone'].unique().tolist()
     dependencies = st.multiselect("Select Dependencies (Optional)", all_milestones, default=[])
@@ -72,44 +77,40 @@ with st.sidebar.form("roadmap_form"):
                 })
                 st.session_state['roadmap_data'] = pd.concat([st.session_state['roadmap_data'], new_entry], ignore_index=True)
 
+# Option to edit an entry's dates
+if not st.session_state['roadmap_data'].empty:
+    st.sidebar.subheader("Edit an Entry's Dates")
+    entries = st.session_state['roadmap_data'][['Phase', 'Milestone', 'ID']].apply(lambda x: f"{x['Phase']} - {x['Milestone']}", axis=1).tolist()
+    selected_entry_edit = st.sidebar.selectbox("Select Entry to Edit", entries)
+    
+    if selected_entry_edit:
+        entry_id = st.session_state['roadmap_data'][st.session_state['roadmap_data'][['Phase', 'Milestone']].apply(lambda x: f"{x['Phase']} - {x['Milestone']}", axis=1) == selected_entry_edit].iloc[0]["ID"]
+        start_date_edit = st.sidebar.date_input("Edit Start Date", value=st.session_state['roadmap_data'].loc[st.session_state['roadmap_data']['ID'] == entry_id, 'Start'].iloc[0])
+        end_date_edit = st.sidebar.date_input("Edit End Date", value=st.session_state['roadmap_data'].loc[st.session_state['roadmap_data']['ID'] == entry_id, 'End'].iloc[0])
+        
+        if st.sidebar.button("Save Date Changes"):
+            st.session_state['roadmap_data'].loc[st.session_state['roadmap_data']['ID'] == entry_id, 'Start'] = start_date_edit
+            st.session_state['roadmap_data'].loc[st.session_state['roadmap_data']['ID'] == entry_id, 'End'] = end_date_edit
+            st.sidebar.success(f"Updated dates for: {selected_entry_edit}")
+
 # Option to delete an entry
 if not st.session_state['roadmap_data'].empty:
     st.sidebar.subheader("Delete a Phase/Milestone")
-    entries = st.session_state['roadmap_data'][['Phase', 'Milestone', 'ID']].apply(lambda x: f"{x['Phase']} - {x['Milestone']}", axis=1).tolist()
-    selected_entry = st.sidebar.selectbox("Select Entry to Delete", entries)
+    selected_entry_delete = st.sidebar.selectbox("Select Entry to Delete", entries)
     
     if st.sidebar.button("Delete Selected Entry"):
-        entry_id = st.session_state['roadmap_data'][st.session_state['roadmap_data'][['Phase', 'Milestone']].apply(lambda x: f"{x['Phase']} - {x['Milestone']}", axis=1) == selected_entry].iloc[0]["ID"]
-        st.session_state['roadmap_data'] = st.session_state['roadmap_data'][st.session_state['roadmap_data']['ID'] != entry_id]
-        st.sidebar.success(f"Deleted: {selected_entry}")
-
-# Search and Filter Capabilities
-st.sidebar.subheader("Search & Filter Roadmap")
-search_query = st.sidebar.text_input("Search by Phase or Milestone")
-filtered_data = st.session_state['roadmap_data']
-if search_query:
-    filtered_data = filtered_data[filtered_data['Phase'].str.contains(search_query, case=False) | filtered_data['Milestone'].str.contains(search_query, case=False)]
-
-# Export and Import Options
-if not st.session_state['roadmap_data'].empty:
-    csv_data = st.session_state['roadmap_data'].drop(columns=["ID"]).to_csv(index=False).encode('utf-8')
-    st.sidebar.download_button("Download Roadmap as CSV", csv_data, "roadmap.csv", "text/csv")
-
-uploaded_file = st.sidebar.file_uploader("Upload a Roadmap CSV", type=["csv"])
-if uploaded_file is not None:
-    uploaded_data = pd.read_csv(uploaded_file)
-    uploaded_data['ID'] = [str(uuid.uuid4()) for _ in range(len(uploaded_data))]
-    st.session_state['roadmap_data'] = pd.concat([st.session_state['roadmap_data'], uploaded_data], ignore_index=True)
-    st.sidebar.success("Roadmap data imported successfully.")
+        entry_id_delete = st.session_state['roadmap_data'][st.session_state['roadmap_data'][['Phase', 'Milestone']].apply(lambda x: f"{x['Phase']} - {x['Milestone']}", axis=1) == selected_entry_delete].iloc[0]["ID"]
+        st.session_state['roadmap_data'] = st.session_state['roadmap_data'][st.session_state['roadmap_data']['ID'] != entry_id_delete]
+        st.sidebar.success(f"Deleted: {selected_entry_delete}")
 
 # Display roadmap data
-if not filtered_data.empty:
+if not st.session_state['roadmap_data'].empty:
     st.subheader("Roadmap Data")
-    st.write(filtered_data.drop(columns=["ID"]))
+    st.write(st.session_state['roadmap_data'].drop(columns=["ID"]))
 
     # Visualize roadmap with Plotly Gantt chart
     fig = px.timeline(
-        filtered_data, 
+        st.session_state['roadmap_data'], 
         x_start="Start", 
         x_end="End", 
         y="Phase", 
@@ -119,10 +120,10 @@ if not filtered_data.empty:
     )
     
     # Draw dependencies (arrows)
-    for _, row in filtered_data.iterrows():
+    for _, row in st.session_state['roadmap_data'].iterrows():
         if row["Dependencies"]:
             for dep in row["Dependencies"]:
-                dep_row = filtered_data[filtered_data['Milestone'] == dep]
+                dep_row = st.session_state['roadmap_data'][st.session_state['roadmap_data']['Milestone'] == dep]
                 if not dep_row.empty:
                     dep_start = dep_row.iloc[0]["End"]
                     fig.add_annotation(
@@ -142,7 +143,7 @@ if not filtered_data.empty:
                         font=dict(color="red", size=12)
                     )
 
-    fig.update_traces(marker_color=filtered_data["Color"], selector=dict(type="scatter"))
+    fig.update_traces(marker_color=st.session_state['roadmap_data']["Color"], selector=dict(type="scatter"))
     fig.update_yaxes(categoryorder="total ascending")
     fig.update_layout(
         xaxis_title="Timeline", 
