@@ -5,7 +5,7 @@ from datetime import datetime
 import random
 import uuid
 import io
-from plotly.io import pio
+import plotly.io as pio
 
 # Set up Streamlit page configuration
 st.set_page_config(page_title="Roadmap Planner", page_icon="📅")
