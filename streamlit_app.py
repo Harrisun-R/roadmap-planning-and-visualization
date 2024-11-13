@@ -4,6 +4,8 @@ import plotly.express as px
 from datetime import datetime
 import random
 import uuid
+import io
+from plotly.io import pio
 
 # Set up Streamlit page configuration
 st.set_page_config(page_title="Roadmap Planner", page_icon="📅")
@@ -165,5 +167,10 @@ if not st.session_state['roadmap_data'].empty:
     )
     # Display Gantt chart
     st.plotly_chart(fig)
+    
+    # Convert figure to image for download
+    img_bytes = io.BytesIO()
+    pio.write_image(fig, img_bytes, format="png")
+    st.download_button(label="Download Chart as PNG", data=img_bytes, file_name="roadmap_chart.png", mime="image/png")
 else:
     st.write("Please add phases and milestones to visualize the roadmap.")
