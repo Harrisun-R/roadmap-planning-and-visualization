@@ -46,6 +46,8 @@ with st.sidebar.form("roadmap_form"):
     
     # Enhanced Validation
     if add_button:
+        start_date = pd.to_datetime(start_date)
+        end_date = pd.to_datetime(end_date)
         # Check for overlapping dates for the same phase
         overlapping = st.session_state['roadmap_data'][
             (st.session_state['roadmap_data']['Phase'] == phase) & 
