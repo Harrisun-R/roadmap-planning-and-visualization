@@ -173,8 +173,6 @@ if not st.session_state['roadmap_data'].empty:
     img_bytes = fig.to_image(format="png")
     
     buf = io.BytesIO(img_bytes)
-    img.save(buf, format="PNG")
-    buf.seek(0)
     st.download_button(label="Download Chart as PNG", data=buf, file_name="roadmap_chart.png", mime="image/png")
 else:
     st.write("Please add phases and milestones to visualize the roadmap.")
