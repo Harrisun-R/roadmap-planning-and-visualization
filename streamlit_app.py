@@ -6,6 +6,7 @@ import random
 import uuid
 import io
 import plotly.io as pio
+from PIL import Image
 
 # Set up Streamlit page configuration
 st.set_page_config(page_title="Roadmap Planner", page_icon="📅")
@@ -169,8 +170,13 @@ if not st.session_state['roadmap_data'].empty:
     st.plotly_chart(fig)
     
     # Convert figure to image for download
-    img_bytes = io.BytesIO()
-    pio.write_image(fig, img_bytes, format="png")
-    st.download_button(label="Download Chart as PNG", data=img_bytes, file_name="roadmap_chart.png", mime="image/png")
+    img_bytes = fig.to_image(format="png")
+    img = Image.open(io.BytesIO(img_bytes))
+    
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    st.download_button(label="Download Chart as PNG", data=buf, file_name="roadmap_chart.png", mime="image/png")
+
 else:
     st.write("Please add phases and milestones to visualize the roadmap.")
